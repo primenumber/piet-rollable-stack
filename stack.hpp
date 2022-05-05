@@ -1,4 +1,5 @@
-#pragma once
+#ifndef PIET_ROLLABLE_STACK_STACK_HPP
+#define PIET_ROLLABLE_STACK_STACK_HPP
 #include <cmath>
 #include <stdexcept>
 #include <vector>
@@ -80,3 +81,5 @@ struct PietStack {
   RedBlackTree<int32_t> rbtree_manager;
   std::shared_ptr<RedBlackTree<int32_t>::Node> tail;
 };
+
+#endif  // PIET_ROLLABLE_STACK_STACK_HPP

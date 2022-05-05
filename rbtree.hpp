@@ -1,4 +1,5 @@
-#pragma once
+#ifndef PIET_ROLLABLE_STACK_RBTREE_HPP
+#define PIET_ROLLABLE_STACK_RBTREE_HPP
 /**
  * @brief Red-Black-Tree(赤黒木)
  * @docs https://github.com/ei1333/library/blob/master/docs/red-black-tree.md
@@ -15,10 +16,10 @@ struct RedBlackTree {
   enum COLOR { BLACK, RED };
 
   struct Node {
+    Monoid key;
     std::shared_ptr<Node> l, r;
     COLOR color;
     int level, cnt;
-    Monoid key;
 
     Node() {}
 
@@ -26,7 +27,7 @@ struct RedBlackTree {
         : key(k), l(nullptr), r(nullptr), color(BLACK), level(0), cnt(1) {}
 
     Node(std::shared_ptr<Node> l, std::shared_ptr<Node> r, const Monoid &k)
-        : key(k), color(RED), l(l), r(r) {}
+        : key(k), l(l), r(r), color(RED) {}
 
     bool is_leaf() const { return l == nullptr; }
   };
@@ -165,10 +166,10 @@ struct RedBlackTree {
   }
 
   std::string to_string(std::shared_ptr<Node> r) {
-    auto s = dump(r);
+    const auto s = dump(r);
     std::string ret;
-    for (int i = 0; i < s.size(); i++) {
-      ret += std::to_string(s[i]);
+    for (auto &&elem : s) {
+      ret += std::to_string(elem);
       ret += ", ";
     }
     return ret;
@@ -225,3 +226,5 @@ struct RedBlackTree {
     return ret.second->key;
   }
 };
+
+#endif  // PIET_ROLLABLE_STACK_RBTREE_HPP
