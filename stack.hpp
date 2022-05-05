@@ -60,10 +60,8 @@ struct PietStack {
         std::max<size_t>(min_head_size_desired, std::ilogb(len));
     const size_t take_count =
         std::min<size_t>(rbtree_manager.count(tail), head_size_desired);
-    head.resize(take_count);
-    for (size_t i = 0; i < take_count; ++i) {
-      head[take_count - 1 - i] = rbtree_manager.pop_back(tail);
-    }
+    std::tie(tail, htree) = rbtree_manager.split(tail, len - take_count);
+    head = rbtree_manager.dump(htree);
   }
   size_t size() const { return head.size() + rbtree_manager.count(tail); }
   size_t head_size() const { return head.size(); }
