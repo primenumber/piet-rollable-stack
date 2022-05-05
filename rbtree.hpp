@@ -96,7 +96,7 @@ struct RedBlackTree {
   }
 
   void dump(std::shared_ptr<Node> r,
-            typename std::vector<Monoid>::iterator &it) {
+            typename std::vector<Monoid>::iterator &it) const {
     if (r->is_leaf()) {
       *it++ = r->key;
       return;
@@ -125,7 +125,6 @@ struct RedBlackTree {
     if (k >= count(t)) return {t, nullptr};
     t = clone(t);
     std::shared_ptr<Node> l = t->l, r = t->r;
-    t.reset();
     if (k < count(l)) {
       auto pp = split(l, k);
       return {pp.first, merge(pp.second, r)};
@@ -158,14 +157,14 @@ struct RedBlackTree {
     return build(0, (int)v.size(), v);
   }
 
-  std::vector<Monoid> dump(std::shared_ptr<Node> r) {
+  std::vector<Monoid> dump(std::shared_ptr<Node> r) const {
     std::vector<Monoid> v((size_t)count(r));
     auto it = begin(v);
     if (r != nullptr) dump(r, it);
     return v;
   }
 
-  std::string to_string(std::shared_ptr<Node> r) {
+  std::string to_string(std::shared_ptr<Node> r) const {
     const auto s = dump(r);
     std::string ret;
     for (auto &&elem : s) {
@@ -184,7 +183,6 @@ struct RedBlackTree {
     auto x = split(t, k);
     auto y = split(x.second, 1);
     auto v = y.first->key;
-    y.first.reset();
     t = merge(x.first, y.second);
     return v;
   }
