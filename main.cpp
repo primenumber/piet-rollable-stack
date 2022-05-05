@@ -127,17 +127,19 @@ std::vector<Query> generate_benchmark_input(size_t size) {
   std::discrete_distribution<> initialize_dis({6, 3, 1});  // push, pop, roll
   size_t stack_size = 0;
   std::vector<Query> queries;
-  for (size_t i = 0; i < size; ++i) {
+  for (size_t i = 0; i < size;) {
     switch (initialize_dis(mt)) {
       case 0: {
         const auto val = value_dis(mt);
         queries.push_back(Push{val});
         ++stack_size;
+        ++i;
       } break;
       case 1: {
         if (stack_size == 0) break;
         queries.push_back(Pop{});
         --stack_size;
+        ++i;
       } break;
       case 2: {
         if (stack_size == 0) break;
@@ -146,6 +148,7 @@ std::vector<Query> generate_benchmark_input(size_t size) {
         while (depth > stack_size) depth = std::exp(ldepth_dis(mt));
         const auto count = value_dis(mt);
         queries.push_back(Roll{depth, count});
+        ++i;
       }
     }
   }
