@@ -146,8 +146,9 @@ std::vector<Query> generate_benchmark_input(size_t size) {
         std::uniform_real_distribution ldepth_dis(0.0, std::log(stack_size));
         auto depth = std::exp(ldepth_dis(mt));
         while (depth > stack_size) depth = std::exp(ldepth_dis(mt));
+        size_t depth_int = round(depth);
         const auto count = value_dis(mt);
-        queries.push_back(Roll{depth, count});
+        queries.push_back(Roll{depth_int, count});
         ++i;
       }
     }
