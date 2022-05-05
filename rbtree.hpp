@@ -9,12 +9,10 @@
 #include <utility>
 #include <vector>
 
-template< typename Monoid>
+template <typename Monoid>
 struct RedBlackTree {
-public:
-  enum COLOR {
-    BLACK, RED
-  };
+ public:
+  enum COLOR { BLACK, RED };
 
   struct Node {
     std::shared_ptr<Node> l, r;
@@ -24,31 +22,28 @@ public:
 
     Node() {}
 
-    Node(const Monoid &k) :
-        key(k), l(nullptr), r(nullptr), color(BLACK), level(0), cnt(1) {}
+    Node(const Monoid &k)
+        : key(k), l(nullptr), r(nullptr), color(BLACK), level(0), cnt(1) {}
 
-    Node(std::shared_ptr<Node> l, std::shared_ptr<Node> r, const Monoid &k) :
-        key(k), color(RED), l(l), r(r) {}
+    Node(std::shared_ptr<Node> l, std::shared_ptr<Node> r, const Monoid &k)
+        : key(k), color(RED), l(l), r(r) {}
 
-    bool is_leaf() const {
-      return l == nullptr;
-    }
+    bool is_leaf() const { return l == nullptr; }
   };
 
-private:
-  std::shared_ptr<Node> alloc(std::shared_ptr<Node> l, std::shared_ptr<Node> r) {
+ private:
+  std::shared_ptr<Node> alloc(std::shared_ptr<Node> l,
+                              std::shared_ptr<Node> r) {
     auto t = std::make_shared<Node>(l, r, M1);
     return update(t);
   }
 
-  virtual std::shared_ptr<Node> clone(std::shared_ptr<Node> t) {
-    return t;
-  }
+  virtual std::shared_ptr<Node> clone(std::shared_ptr<Node> t) { return t; }
 
   std::shared_ptr<Node> rotate(std::shared_ptr<Node> t, bool b) {
     t = clone(t);
     std::shared_ptr<Node> s;
-    if(b) {
+    if (b) {
       s = clone(t->l);
       t->l = s->r;
       s->r = t;
@@ -61,25 +56,26 @@ private:
     return update(s);
   }
 
-  std::shared_ptr<Node> submerge(std::shared_ptr<Node> l, std::shared_ptr<Node> r) {
-    if(l->level < r->level) {
+  std::shared_ptr<Node> submerge(std::shared_ptr<Node> l,
+                                 std::shared_ptr<Node> r) {
+    if (l->level < r->level) {
       r = clone(r);
       std::shared_ptr<Node> c = (r->l = submerge(l, r->l));
-      if(r->color == BLACK && c->color == RED && c->l && c->l->color == RED) {
+      if (r->color == BLACK && c->color == RED && c->l && c->l->color == RED) {
         r->color = RED;
         c->color = BLACK;
-        if(r->r->color == BLACK) return rotate(r, true);
+        if (r->r->color == BLACK) return rotate(r, true);
         r->r->color = BLACK;
       }
       return update(r);
     }
-    if(l->level > r->level) {
+    if (l->level > r->level) {
       l = clone(l);
       std::shared_ptr<Node> c = (l->r = submerge(l->r, r));
-      if(l->color == BLACK && c->color == RED && c->r && c->r->color == RED) {
+      if (l->color == BLACK && c->color == RED && c->r && c->r->color == RED) {
         l->color = RED;
         c->color = BLACK;
-        if(l->l->color == BLACK) return rotate(l, false);
+        if (l->l->color == BLACK) return rotate(l, false);
         l->l->color = BLACK;
       }
       return update(l);
@@ -87,8 +83,8 @@ private:
     return alloc(l, r);
   }
 
-  std::shared_ptr<Node> build(int l, int r, const std::vector< Monoid > &v) {
-    if(l + 1 >= r) return alloc(v[l]);
+  std::shared_ptr<Node> build(int l, int r, const std::vector<Monoid> &v) {
+    if (l + 1 >= r) return alloc(v[l]);
     return merge(build(l, (l + r) >> 1, v), build((l + r) >> 1, r, v));
   }
 
@@ -98,8 +94,9 @@ private:
     return t;
   }
 
-  void dump(std::shared_ptr<Node> r, typename std::vector< Monoid >::iterator &it) {
-    if(r->is_leaf()) {
+  void dump(std::shared_ptr<Node> r,
+            typename std::vector<Monoid>::iterator &it) {
+    if (r->is_leaf()) {
       *it++ = r->key;
       return;
     }
@@ -107,17 +104,12 @@ private:
     dump(r->r, it);
   }
 
-  std::shared_ptr<Node> merge(std::shared_ptr<Node> l) {
-    return l;
-  }
+  std::shared_ptr<Node> merge(std::shared_ptr<Node> l) { return l; }
 
-public:
-
+ public:
   const Monoid M1;
 
-  RedBlackTree(const Monoid &M1) :
-      M1(M1) { }
-
+  RedBlackTree(const Monoid &M1) : M1(M1) {}
 
   std::shared_ptr<Node> alloc(const Monoid &key) {
     return std::make_shared<Node>(key);
@@ -125,45 +117,48 @@ public:
 
   int count(const std::shared_ptr<Node> t) const { return t ? t->cnt : 0; }
 
-  std::pair< std::shared_ptr<Node> , std::shared_ptr<Node>  > split(std::shared_ptr<Node> t, int k) {
-    if(!t) return {nullptr, nullptr};
-    if(k == 0) return {nullptr, t};
-    if(k >= count(t)) return {t, nullptr};
+  std::pair<std::shared_ptr<Node>, std::shared_ptr<Node> > split(
+      std::shared_ptr<Node> t, int k) {
+    if (!t) return {nullptr, nullptr};
+    if (k == 0) return {nullptr, t};
+    if (k >= count(t)) return {t, nullptr};
     t = clone(t);
     std::shared_ptr<Node> l = t->l, r = t->r;
     t.reset();
-    if(k < count(l)) {
+    if (k < count(l)) {
       auto pp = split(l, k);
       return {pp.first, merge(pp.second, r)};
     }
-    if(k > count(l)) {
+    if (k > count(l)) {
       auto pp = split(r, k - count(l));
       return {merge(l, pp.first), pp.second};
     }
     return {l, r};
   }
 
-  std::tuple< std::shared_ptr<Node> , std::shared_ptr<Node> , std::shared_ptr<Node>  > split3(std::shared_ptr<Node> t, int a, int b) {
+  std::tuple<std::shared_ptr<Node>, std::shared_ptr<Node>,
+             std::shared_ptr<Node> >
+  split3(std::shared_ptr<Node> t, int a, int b) {
     auto x = split(t, a);
     auto y = split(x.second, b - a);
     return std::make_tuple(x.first, y.first, y.second);
   }
 
-  template< typename ... Args >
-  std::shared_ptr<Node> merge(std::shared_ptr<Node> l, Args ...rest) {
+  template <typename... Args>
+  std::shared_ptr<Node> merge(std::shared_ptr<Node> l, Args... rest) {
     auto r = merge(rest...);
-    if(!l || !r) return l ? l : r;
+    if (!l || !r) return l ? l : r;
     auto c = submerge(l, r);
     c->color = BLACK;
     return c;
   }
 
-  std::shared_ptr<Node> build(const std::vector< Monoid > &v) {
-    return build(0, (int) v.size(), v);
+  std::shared_ptr<Node> build(const std::vector<Monoid> &v) {
+    return build(0, (int)v.size(), v);
   }
 
-  std::vector< Monoid > dump(std::shared_ptr<Node> r) {
-    std::vector< Monoid > v((size_t) count(r));
+  std::vector<Monoid> dump(std::shared_ptr<Node> r) {
+    std::vector<Monoid> v((size_t)count(r));
     auto it = begin(v);
     dump(r, it);
     return v;
@@ -172,7 +167,7 @@ public:
   std::string to_string(std::shared_ptr<Node> r) {
     auto s = dump(r);
     std::string ret;
-    for(int i = 0; i < s.size(); i++) {
+    for (int i = 0; i < s.size(); i++) {
       ret += std::to_string(s[i]);
       ret += ", ";
     }
@@ -199,12 +194,14 @@ public:
 
   void set_element(std::shared_ptr<Node> &t, int k, const Monoid &x) {
     t = clone(t);
-    if(t->is_leaf()) {
+    if (t->is_leaf()) {
       t->key = x;
       return;
     }
-    if(k < count(t->l)) set_element(t->l, k, x);
-    else set_element(t->r, k - count(t->l), x);
+    if (k < count(t->l))
+      set_element(t->l, k, x);
+    else
+      set_element(t->r, k - count(t->l), x);
     t = update(t);
   }
 
