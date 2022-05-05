@@ -39,7 +39,8 @@ struct PietStack {
   }
   void roll(int32_t depth, int32_t count) {
     const auto len = this->size();
-    if (depth < 0 || depth > len) throw std::out_of_range("Invalid depth");
+    if (depth < 0 || static_cast<size_t>(depth) > len)
+      throw std::out_of_range("Invalid depth");
     count %= depth;
     if (count < 0) count += depth;  // make positive
     auto htree = rbtree_manager.build(head);
