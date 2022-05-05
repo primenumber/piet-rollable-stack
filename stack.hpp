@@ -19,8 +19,7 @@ struct PietStack {
       auto right = rbtree_manager.build(to_be_pushed);
       tail = rbtree_manager.merge(std::move(tail), std::move(right));
       head.erase(begin(head), begin(head) + head_size_desired);
-      head_size_desired =
-          std::max<size_t>(min_head_size_desired, std::ilogb(this->size()));
+      head_size_desired = compute_head_size_desired();
     }
   }
   int32_t pop() {
@@ -28,8 +27,7 @@ struct PietStack {
       if (rbtree_manager.count(tail) == 0)
         throw std::out_of_range("Stack empty");
       const auto len = this->size();
-      head_size_desired =
-          std::max<size_t>(min_head_size_desired, std::ilogb(len));
+      head_size_desired = compute_head_size_desired();
       const size_t take_count =
           std::min<size_t>(rbtree_manager.count(tail), head_size_desired);
       std::unique_ptr<RedBlackTree<int32_t>::Node> htree;
@@ -59,8 +57,7 @@ struct PietStack {
         rbtree_manager.split3(std::move(tail), len - depth, len - count);
     tail =
         rbtree_manager.merge(std::move(left), std::move(right), std::move(mid));
-    head_size_desired =
-        std::max<size_t>(min_head_size_desired, std::ilogb(len));
+    head_size_desired = compute_head_size_desired();
     const size_t take_count =
         std::min<size_t>(rbtree_manager.count(tail), head_size_desired);
     std::tie(tail, htree) =
@@ -87,6 +84,9 @@ struct PietStack {
  private:
   void roll_head(size_t depth, size_t count) {
     std::rotate(std::end(head) - depth, std::end(head) - count, std::end(head));
+  }
+  size_t compute_head_size_desired() const {
+    return std::max<size_t>(min_head_size_desired, std::ilogb(size()));
   }
   size_t head_size_desired;
   std::vector<int32_t> head;
