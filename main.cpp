@@ -48,15 +48,16 @@ struct PietStackRBTree {
     count %= depth;
     if (count < 0) count += depth;  // make positive
     auto [left, mid, right] =
-        rbtree_manager.split3(data, len - depth, len - count);
-    data = rbtree_manager.merge(left, right, mid);
+        rbtree_manager.split3(std::move(data), len - depth, len - count);
+    data =
+        rbtree_manager.merge(std::move(left), std::move(right), std::move(mid));
   }
   size_t size() const { return rbtree_manager.count(data); }
   std::vector<int32_t> dump() const { return rbtree_manager.dump(data); }
 
  private:
   RedBlackTree<int32_t> rbtree_manager;
-  std::shared_ptr<RedBlackTree<int32_t>::Node> data;
+  std::unique_ptr<RedBlackTree<int32_t>::Node> data;
 };
 
 void random_test() {

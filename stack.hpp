@@ -17,7 +17,7 @@ struct PietStack {
       std::vector<int32_t> to_be_pushed(std::begin(head),
                                         std::begin(head) + head_size_desired);
       auto right = rbtree_manager.build(to_be_pushed);
-      tail = rbtree_manager.merge(tail, right);
+      tail = rbtree_manager.merge(std::move(tail), std::move(right));
       head.erase(begin(head), begin(head) + head_size_desired);
       head_size_desired =
           std::max<size_t>(min_head_size_desired, std::ilogb(this->size()));
@@ -32,8 +32,9 @@ struct PietStack {
           std::max<size_t>(min_head_size_desired, std::ilogb(len));
       const size_t take_count =
           std::min<size_t>(rbtree_manager.count(tail), head_size_desired);
-      std::shared_ptr<RedBlackTree<int32_t>::Node> htree;
-      std::tie(tail, htree) = rbtree_manager.split(tail, len - take_count);
+      std::unique_ptr<RedBlackTree<int32_t>::Node> htree;
+      std::tie(tail, htree) =
+          rbtree_manager.split(std::move(tail), len - take_count);
       head = rbtree_manager.dump(htree);
     }
     auto res = head.back();
@@ -52,16 +53,18 @@ struct PietStack {
       return;
     }
     auto htree = rbtree_manager.build(head);
-    tail = rbtree_manager.merge(tail, htree);
+    tail = rbtree_manager.merge(std::move(tail), std::move(htree));
     head.clear();
     auto [left, mid, right] =
-        rbtree_manager.split3(tail, len - depth, len - count);
-    tail = rbtree_manager.merge(left, right, mid);
+        rbtree_manager.split3(std::move(tail), len - depth, len - count);
+    tail =
+        rbtree_manager.merge(std::move(left), std::move(right), std::move(mid));
     head_size_desired =
         std::max<size_t>(min_head_size_desired, std::ilogb(len));
     const size_t take_count =
         std::min<size_t>(rbtree_manager.count(tail), head_size_desired);
-    std::tie(tail, htree) = rbtree_manager.split(tail, len - take_count);
+    std::tie(tail, htree) =
+        rbtree_manager.split(std::move(tail), len - take_count);
     head = rbtree_manager.dump(htree);
   }
   size_t size() const { return head.size() + rbtree_manager.count(tail); }
@@ -88,7 +91,7 @@ struct PietStack {
   size_t head_size_desired;
   std::vector<int32_t> head;
   RedBlackTree<int32_t> rbtree_manager;
-  std::shared_ptr<RedBlackTree<int32_t>::Node> tail;
+  std::unique_ptr<RedBlackTree<int32_t>::Node> tail;
 };
 
 #endif  // PIET_ROLLABLE_STACK_STACK_HPP

@@ -17,7 +17,7 @@ struct RedBlackTree {
 
   struct Node {
     Monoid key;
-    std::shared_ptr<Node> l, r;
+    std::unique_ptr<Node> l, r;
     COLOR color;
     int level, cnt;
 
@@ -26,71 +26,77 @@ struct RedBlackTree {
     Node(const Monoid &k)
         : key(k), l(nullptr), r(nullptr), color(BLACK), level(0), cnt(1) {}
 
-    Node(std::shared_ptr<Node> l, std::shared_ptr<Node> r, const Monoid &k)
-        : key(k), l(l), r(r), color(RED) {}
+    Node(std::unique_ptr<Node> l, std::unique_ptr<Node> r, const Monoid &k)
+        : key(k), l(std::move(l)), r(std::move(r)), color(RED) {}
 
     bool is_leaf() const { return l == nullptr; }
   };
 
  private:
-  std::shared_ptr<Node> alloc(std::shared_ptr<Node> l,
-                              std::shared_ptr<Node> r) {
-    auto t = std::make_shared<Node>(l, r, M1);
-    return update(t);
-  }
-
-  std::shared_ptr<Node> rotate(std::shared_ptr<Node> t, bool b) {
-    std::shared_ptr<Node> s;
-    if (b) {
-      s = t->l;
-      t->l = s->r;
-      s->r = t;
-    } else {
-      s = t->r;
-      t->r = s->l;
-      s->l = t;
-    }
+  std::unique_ptr<Node> alloc(std::unique_ptr<Node> l,
+                              std::unique_ptr<Node> r) {
+    auto t = std::make_unique<Node>(std::move(l), std::move(r), M1);
     update(t);
-    return update(s);
+    return t;
   }
 
-  std::shared_ptr<Node> submerge(std::shared_ptr<Node> l,
-                                 std::shared_ptr<Node> r) {
+  std::unique_ptr<Node> rotate(std::unique_ptr<Node> t, bool b) {
+    std::unique_ptr<Node> s;
+    if (b) {
+      s = std::move(t->l);
+      t->l = std::move(s->r);
+      s->r = std::move(t);
+      update(s->r);
+    } else {
+      s = std::move(t->r);
+      t->r = std::move(s->l);
+      s->l = std::move(t);
+      update(s->l);
+    }
+    update(s);
+    return s;
+  }
+
+  std::unique_ptr<Node> submerge(std::unique_ptr<Node> l,
+                                 std::unique_ptr<Node> r) {
     if (l->level < r->level) {
-      std::shared_ptr<Node> c = (r->l = submerge(l, r->l));
+      std::unique_ptr<Node> &c =
+          (r->l = submerge(std::move(l), std::move(r->l)));
       if (r->color == BLACK && c->color == RED && c->l && c->l->color == RED) {
         r->color = RED;
         c->color = BLACK;
-        if (r->r->color == BLACK) return rotate(r, true);
+        if (r->r->color == BLACK) return rotate(std::move(r), true);
         r->r->color = BLACK;
       }
-      return update(r);
+      update(r);
+      return r;
     }
     if (l->level > r->level) {
-      std::shared_ptr<Node> c = (l->r = submerge(l->r, r));
+      std::unique_ptr<Node> &c =
+          (l->r = submerge(std::move(l->r), std::move(r)));
       if (l->color == BLACK && c->color == RED && c->r && c->r->color == RED) {
         l->color = RED;
         c->color = BLACK;
-        if (l->l->color == BLACK) return rotate(l, false);
+        if (l->l->color == BLACK) return rotate(std::move(l), false);
         l->l->color = BLACK;
       }
-      return update(l);
+      update(l);
+      return l;
     }
-    return alloc(l, r);
+    return alloc(std::move(l), std::move(r));
   }
 
-  std::shared_ptr<Node> build(int l, int r, const std::vector<Monoid> &v) {
+  std::unique_ptr<Node> build(int l, int r, const std::vector<Monoid> &v) {
     if (l + 1 >= r) return alloc(v[l]);
     return merge(build(l, (l + r) >> 1, v), build((l + r) >> 1, r, v));
   }
 
-  std::shared_ptr<Node> update(std::shared_ptr<Node> t) {
+  void update(std::unique_ptr<Node> &t) {
     t->cnt = count(t->l) + count(t->r) + (!t->l || !t->r);
     t->level = t->l ? t->l->level + (t->l->color == BLACK) : 0;
-    return t;
   }
 
-  void dump(std::shared_ptr<Node> r,
+  void dump(const std::unique_ptr<Node> &r,
             typename std::vector<Monoid>::iterator &it) const {
     if (r->is_leaf()) {
       *it++ = r->key;
@@ -100,65 +106,66 @@ struct RedBlackTree {
     dump(r->r, it);
   }
 
-  std::shared_ptr<Node> merge(std::shared_ptr<Node> l) { return l; }
+  std::unique_ptr<Node> merge(std::unique_ptr<Node> l) { return l; }
 
  public:
   const Monoid M1;
 
   RedBlackTree(const Monoid &M1) : M1(M1) {}
 
-  std::shared_ptr<Node> alloc(const Monoid &key) {
-    return std::make_shared<Node>(key);
+  std::unique_ptr<Node> alloc(const Monoid &key) {
+    return std::make_unique<Node>(key);
   }
 
-  int count(const std::shared_ptr<Node> t) const { return t ? t->cnt : 0; }
+  int count(const std::unique_ptr<Node> &t) const { return t ? t->cnt : 0; }
 
-  std::pair<std::shared_ptr<Node>, std::shared_ptr<Node> > split(
-      std::shared_ptr<Node> t, int k) {
+  std::pair<std::unique_ptr<Node>, std::unique_ptr<Node> > split(
+      std::unique_ptr<Node> t, int k) {
     if (!t) return {nullptr, nullptr};
-    if (k == 0) return {nullptr, t};
-    if (k >= count(t)) return {t, nullptr};
-    std::shared_ptr<Node> l = t->l, r = t->r;
+    if (k == 0) return {nullptr, std::move(t)};
+    if (k >= count(t)) return {std::move(t), nullptr};
+    std::unique_ptr<Node> &l = t->l;
+    std::unique_ptr<Node> &r = t->r;
     if (k < count(l)) {
-      auto pp = split(l, k);
-      return {pp.first, merge(pp.second, r)};
+      auto pp = split(std::move(l), k);
+      return {std::move(pp.first), merge(std::move(pp.second), std::move(r))};
     }
     if (k > count(l)) {
-      auto pp = split(r, k - count(l));
-      return {merge(l, pp.first), pp.second};
+      auto pp = split(std::move(r), k - count(l));
+      return {merge(std::move(l), std::move(pp.first)), std::move(pp.second)};
     }
-    return {l, r};
+    return {std::move(l), std::move(r)};
   }
 
-  std::tuple<std::shared_ptr<Node>, std::shared_ptr<Node>,
-             std::shared_ptr<Node> >
-  split3(std::shared_ptr<Node> t, int a, int b) {
-    auto x = split(t, a);
-    auto y = split(x.second, b - a);
-    return std::make_tuple(x.first, y.first, y.second);
+  std::tuple<std::unique_ptr<Node>, std::unique_ptr<Node>,
+             std::unique_ptr<Node> >
+  split3(std::unique_ptr<Node> t, int a, int b) {
+    auto x = split(std::move(t), a);
+    auto y = split(std::move(x.second), b - a);
+    return {std::move(x.first), std::move(y.first), std::move(y.second)};
   }
 
   template <typename... Args>
-  std::shared_ptr<Node> merge(std::shared_ptr<Node> l, Args... rest) {
-    auto r = merge(rest...);
-    if (!l || !r) return l ? l : r;
-    auto c = submerge(l, r);
+  std::unique_ptr<Node> merge(std::unique_ptr<Node> l, Args... rest) {
+    auto r = merge(std::forward<Args>(rest)...);
+    if (!l || !r) return std::move(l ? l : r);
+    auto c = submerge(std::move(l), std::move(r));
     c->color = BLACK;
     return c;
   }
 
-  std::shared_ptr<Node> build(const std::vector<Monoid> &v) {
+  std::unique_ptr<Node> build(const std::vector<Monoid> &v) {
     return build(0, (int)v.size(), v);
   }
 
-  std::vector<Monoid> dump(std::shared_ptr<Node> r) const {
+  std::vector<Monoid> dump(const std::unique_ptr<Node> &r) const {
     std::vector<Monoid> v((size_t)count(r));
     auto it = begin(v);
     if (r != nullptr) dump(r, it);
     return v;
   }
 
-  std::string to_string(std::shared_ptr<Node> r) const {
+  std::string to_string(const std::unique_ptr<Node> &r) const {
     const auto s = dump(r);
     std::string ret;
     for (auto &&elem : s) {
@@ -168,12 +175,12 @@ struct RedBlackTree {
     return ret;
   }
 
-  void insert(std::shared_ptr<Node> &t, int k, const Monoid &v) {
+  void insert(std::unique_ptr<Node> &t, int k, const Monoid &v) {
     auto x = split(t, k);
     t = merge(merge(x.first, alloc(v)), x.second);
   }
 
-  Monoid erase(std::shared_ptr<Node> &t, int k) {
+  Monoid erase(std::unique_ptr<Node> &t, int k) {
     auto x = split(t, k);
     auto y = split(x.second, 1);
     auto v = y.first->key;
@@ -181,11 +188,11 @@ struct RedBlackTree {
     return v;
   }
 
-  Monoid query(std::shared_ptr<Node> t, int a, int b) {
+  Monoid query(std::unique_ptr<Node> t, int a, int b) {
     return query(t, a, b, 0, count(t));
   }
 
-  void set_element(std::shared_ptr<Node> &t, int k, const Monoid &x) {
+  void set_element(std::unique_ptr<Node> &t, int k, const Monoid &x) {
     if (t->is_leaf()) {
       t->key = x;
       return;
@@ -197,23 +204,24 @@ struct RedBlackTree {
     t = update(t);
   }
 
-  void push_front(std::shared_ptr<Node> &t, const Monoid &v) {
-    t = merge(std::make_shared<Node>(v), t);
+  void push_front(std::unique_ptr<Node> &t, const Monoid &v) {
+    t = merge(std::make_unique<Node>(v), std::move(t));
   }
 
-  void push_back(std::shared_ptr<Node> &t, const Monoid &v) {
-    t = merge(t, std::make_shared<Node>(v));
+  void push_back(std::unique_ptr<Node> &t, const Monoid &v) {
+    t = merge(std::move(t), std::make_unique<Node>(v));
   }
 
-  Monoid pop_front(std::shared_ptr<Node> &t) {
+  Monoid pop_front(std::unique_ptr<Node> &t) {
     auto ret = split(t, 1);
-    t = ret.second;
+    t = std::move(ret.second);
     return ret.first->key;
   }
 
-  Monoid pop_back(std::shared_ptr<Node> &t) {
-    auto ret = split(t, count(t) - 1);
-    t = ret.first;
+  Monoid pop_back(std::unique_ptr<Node> &t) {
+    const auto pos = count(t) - 1;
+    auto ret = split(std::move(t), pos);
+    t = std::move(ret.first);
     return ret.second->key;
   }
 };
