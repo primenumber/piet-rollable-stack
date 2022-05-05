@@ -66,12 +66,12 @@ struct PietStack {
   size_t size() const { return head.size() + rbtree_manager.count(tail); }
   size_t head_size() const { return head.size(); }
   size_t tail_size() const { return rbtree_manager.count(tail); }
-  std::vector<int32_t> dump() {
+  std::vector<int32_t> dump() const {
     std::vector<int32_t> result = rbtree_manager.dump(tail);
     result.insert(std::end(result), std::begin(head), std::end(head));
     return result;
   }
-  std::string to_string() {
+  std::string to_string() const {
     std::string result;
     for (auto&& elem : this->dump()) {
       result += std::to_string(elem);
