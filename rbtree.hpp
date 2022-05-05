@@ -39,17 +39,14 @@ struct RedBlackTree {
     return update(t);
   }
 
-  virtual std::shared_ptr<Node> clone(std::shared_ptr<Node> t) { return t; }
-
   std::shared_ptr<Node> rotate(std::shared_ptr<Node> t, bool b) {
-    t = clone(t);
     std::shared_ptr<Node> s;
     if (b) {
-      s = clone(t->l);
+      s = t->l;
       t->l = s->r;
       s->r = t;
     } else {
-      s = clone(t->r);
+      s = t->r;
       t->r = s->l;
       s->l = t;
     }
@@ -60,7 +57,6 @@ struct RedBlackTree {
   std::shared_ptr<Node> submerge(std::shared_ptr<Node> l,
                                  std::shared_ptr<Node> r) {
     if (l->level < r->level) {
-      r = clone(r);
       std::shared_ptr<Node> c = (r->l = submerge(l, r->l));
       if (r->color == BLACK && c->color == RED && c->l && c->l->color == RED) {
         r->color = RED;
@@ -71,7 +67,6 @@ struct RedBlackTree {
       return update(r);
     }
     if (l->level > r->level) {
-      l = clone(l);
       std::shared_ptr<Node> c = (l->r = submerge(l->r, r));
       if (l->color == BLACK && c->color == RED && c->r && c->r->color == RED) {
         l->color = RED;
@@ -123,7 +118,6 @@ struct RedBlackTree {
     if (!t) return {nullptr, nullptr};
     if (k == 0) return {nullptr, t};
     if (k >= count(t)) return {t, nullptr};
-    t = clone(t);
     std::shared_ptr<Node> l = t->l, r = t->r;
     if (k < count(l)) {
       auto pp = split(l, k);
@@ -192,7 +186,6 @@ struct RedBlackTree {
   }
 
   void set_element(std::shared_ptr<Node> &t, int k, const Monoid &x) {
-    t = clone(t);
     if (t->is_leaf()) {
       t->key = x;
       return;
