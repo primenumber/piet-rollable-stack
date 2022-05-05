@@ -161,7 +161,7 @@ struct RedBlackTree {
   std::vector<Monoid> dump(std::shared_ptr<Node> r) {
     std::vector<Monoid> v((size_t)count(r));
     auto it = begin(v);
-    dump(r, it);
+    if (r != nullptr) dump(r, it);
     return v;
   }
 
