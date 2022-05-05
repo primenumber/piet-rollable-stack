@@ -1,5 +1,6 @@
 #ifndef PIET_ROLLABLE_STACK_STACK_HPP
 #define PIET_ROLLABLE_STACK_STACK_HPP
+#include <algorithm>
 #include <cmath>
 #include <stdexcept>
 #include <vector>
@@ -45,6 +46,10 @@ struct PietStack {
     if (depth == 0) return;  // nothing to do
     count %= depth;
     if (count < 0) count += depth;  // make positive
+    if (static_cast<size_t>(depth) <= head_size()) {
+      roll_head(depth, count);
+      return;
+    }
     auto htree = rbtree_manager.build(head);
     tail = rbtree_manager.merge(tail, htree);
     head.clear();
@@ -78,6 +83,9 @@ struct PietStack {
   }
 
  private:
+  void roll_head(size_t depth, size_t count) {
+    std::rotate(std::end(head) - depth, std::end(head) - count, std::end(head));
+  }
   size_t head_size_desired;
   std::vector<int32_t> head;
   RedBlackTree<int32_t> rbtree_manager;
